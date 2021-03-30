@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Dashboard</title>
+    <meta name="description" content="Basic HTML boilerplate" />
+    <meta name="author" content="Daily Dev Tips" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+  </head>
+
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">      
+        <a class="navbar-brand" href="#">Vaccine Coverage Comparison Tool</a>
+     </nav>
+
+    <div class="container">
+ 
+        <div class="card shadow">
+          <div class="card-body">
+            <h4 class="card-title">Inputs</h4>
+                <form method='post' id='myForm' name='myForm'>
+                    <div class="form-row">
+                        <label for="y_ax">Choose Y Axis: </label>
+                        <select name="y_ax" id="y_ax">
+                            <option value="">---</option>
+                            {% for y in num_cols %}
+                                <option value="{{y}}">{{y}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label for="country">Choose a country: </label>
+                        <select name="country" id="country">
+                            <option value="">---</option>
+                            {% for c in countries %}
+                                <option value="{{c}}">{{c}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label for="vac">Choose a vaccine: </label>
+                        <select name="vac" id="vac">
+                            <option value="">---</option>
+                            {% for v in vaccines %}
+                                <option value="{{v}}">{{v}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label for="year">Choose starting year: </label>
+                        <select name="year" id="year">
+                            <option value="">---</option>
+                            {% for y in years %}
+                                <option value="{{y}}">{{y}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary float-right">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <div id='chartDiv' style="display: none;">
+        <div class="container" style="padding-top: 10px;">
+            <div class="card text-light shadow">
+                 <canvas id="myChart"></canvas> 
+            </div>
+        </div>
+    </div>
+    
+  </body>
+  
+  
+  
+  <script type="text/javascript">
+    $( document ).ready(function() {
+        var myChart;
+        $("#myForm").submit(function(event){
+            event.preventDefault();
+            var vac = $('#vac').val();
+            var country = $('#country').val();
+            var year = $('#year').val();
+            var y_ax = $('#y_ax').val();
+            
+            $.ajax({
+                data: JSON.stringify({
+                    vac: vac,
+                    country: country,
+                    year: year,
+                    y_ax: y_ax
+                }),
+                type: 'POST',
+                contentType: 'application/json;charset=UTF-8',
+                url: "{{ url_for('home') }}",
+                success: function(d){
+                    if (myChart) {
+                        myChart.data.labels = d.year_data;
+                        myChart.data.datasets[0].data = d.ihme_data;
+                        myChart.data.datasets[1].data = d.who_data;
+                        myChart.update();
+                    }else{
+                        var config = {
+                        type: 'line',
+                        data: {
+                            labels: d.year_data,
+                            datasets: [{
+                                label: 'IHME: ',
+                                data: d.ihme_data,
+                                borderColor: "#bae755",
+                                backgroundColor: 'rgb(255, 99, 132)',
+                                borderColor: 'rgb(255, 99, 132)',
+                                fill: false,
+                            }, {
+                                label: 'WHO/UN: ',
+                                fill: false,
+                                data: d.who_data,
+                                backgroundColor: 'rgb(54, 162, 235)',
+                                borderColor: 'rgb(54, 162, 235)',
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            title: {
+                                display: true,
+                                text: 'Comparison'
+                            },
+                            tooltips: {
+                                mode: 'index',
+                                intersect: false,
+                            },
+                            hover: {
+                                mode: 'nearest',
+                                intersect: true
+                            },
+                            scales: {
+                                xAxes: [{
+                                    display: true,
+                                    scaleLabel: {
+                                        display: true,
+                                        labelString: 'Year'
+                                    }
+                                }],
+                                yAxes: [{
+                                    display: true,
+                                    scaleLabel: {
+                                        display: true,
+                                        labelString: 'Value'
+                                    }
+                                }]
+                            }
+                        }
+                    };
+                    var ctx = document.getElementById('myChart').getContext('2d');
+			        myChart = new Chart(ctx, config);
+                    }
+ 
+                    $('#chartDiv').show();
+
+                },
+                error: function(data) {
+                    console.log(data);
+                    alert("Error...");
+            }
+        });
+
+        });
+    });
+
+ </script>
+
+ 
+  
+</html>
