@@ -25,8 +25,8 @@
                         <label for="y_ax">Choose Y Axis: </label>
                         <select name="y_ax" id="y_ax">
                             <option value="">---</option>
-                            {% for y in num_cols %}
-                                <option value="{{y}}">{{y}}</option>
+                            {% for key, value in num_cols.items() %}
+                                <option value="{{key}}">{{value}}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -71,6 +71,8 @@
             </div>
         </div>
     </div>
+
+
     
   </body>
   
@@ -79,93 +81,105 @@
   <script type="text/javascript">
     $( document ).ready(function() {
         var myChart;
+        $("#y_ax").change(function(e){
+            if($('#y_ax').val()=='pop_est'){
+                $("#vac").prop('disabled', true); 
+            }else{
+                $("#vac").prop('disabled', false);  
+            }
+        });
         $("#myForm").submit(function(event){
             event.preventDefault();
             var vac = $('#vac').val();
             var country = $('#country').val();
             var year = $('#year').val();
             var y_ax = $('#y_ax').val();
-            
-            $.ajax({
-                data: JSON.stringify({
-                    vac: vac,
-                    country: country,
-                    year: year,
-                    y_ax: y_ax
-                }),
-                type: 'POST',
-                contentType: 'application/json;charset=UTF-8',
-                url: "{{ url_for('home') }}",
-                success: function(d){
-                    if (myChart) {
-                        myChart.data.labels = d.year_data;
-                        myChart.data.datasets[0].data = d.ihme_data;
-                        myChart.data.datasets[1].data = d.who_data;
-                        myChart.update();
-                    }else{
-                        var config = {
-                        type: 'line',
-                        data: {
-                            labels: d.year_data,
-                            datasets: [{
-                                label: 'IHME: ',
-                                data: d.ihme_data,
-                                borderColor: "#bae755",
-                                backgroundColor: 'rgb(255, 99, 132)',
-                                borderColor: 'rgb(255, 99, 132)',
-                                fill: false,
-                            }, {
-                                label: 'WHO/UN: ',
-                                fill: false,
-                                data: d.who_data,
-                                backgroundColor: 'rgb(54, 162, 235)',
-                                borderColor: 'rgb(54, 162, 235)',
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            title: {
-                                display: true,
-                                text: 'Comparison'
-                            },
-                            tooltips: {
-                                mode: 'index',
-                                intersect: false,
-                            },
-                            hover: {
-                                mode: 'nearest',
-                                intersect: true
-                            },
-                            scales: {
-                                xAxes: [{
-                                    display: true,
-                                    scaleLabel: {
-                                        display: true,
-                                        labelString: 'Year'
-                                    }
-                                }],
-                                yAxes: [{
-                                    display: true,
-                                    scaleLabel: {
-                                        display: true,
-                                        labelString: 'Value'
-                                    }
+            if(country == '' || year == '' || y_ax ==''){
+                alert('Enter value for all available fields');
+            }else{
+                $.ajax({
+                    data: JSON.stringify({
+                        vac: vac,
+                        country: country,
+                        year: year,
+                        y_ax: y_ax
+                    }),
+                    type: 'POST',
+                    contentType: 'application/json;charset=UTF-8',
+                    url: "{{ url_for('home') }}",
+                    success: function(d){
+                        if (myChart) {
+                            myChart.data.labels = d.year_data;
+                            myChart.data.datasets[0].data = d.ihme_data;
+                            myChart.data.datasets[1].data = d.who_data;
+                            myChart.update();
+                        }else{
+                            var config = {
+                            type: 'line',
+                            data: {
+                                labels: d.year_data,
+                                datasets: [{
+                                    label: 'IHME: ',
+                                    data: d.ihme_data,
+                                    borderColor: "#bae755",
+                                    backgroundColor: 'rgb(255, 99, 132)',
+                                    borderColor: 'rgb(255, 99, 132)',
+                                    fill: false,
+                                }, {
+                                    label: 'WHO/UN: ',
+                                    fill: false,
+                                    data: d.who_data,
+                                    backgroundColor: 'rgb(54, 162, 235)',
+                                    borderColor: 'rgb(54, 162, 235)',
                                 }]
+                            },
+                            options: {
+                                responsive: true,
+                                title: {
+                                    display: true,
+                                    text: 'Comparison'
+                                },
+                                tooltips: {
+                                    mode: 'index',
+                                    intersect: false,
+                                },
+                                hover: {
+                                    mode: 'nearest',
+                                    intersect: true
+                                },
+                                scales: {
+                                    xAxes: [{
+                                        display: true,
+                                        scaleLabel: {
+                                            display: true,
+                                            labelString: 'Year'
+                                        }
+                                    }],
+                                    yAxes: [{
+                                        display: true,
+                                        scaleLabel: {
+                                            display: true,
+                                            labelString: 'Value'
+                                        }
+                                    }]
+                                }
                             }
+                        };
+                        var ctx = document.getElementById('myChart').getContext('2d');
+                        myChart = new Chart(ctx, config);
                         }
-                    };
-                    var ctx = document.getElementById('myChart').getContext('2d');
-			        myChart = new Chart(ctx, config);
-                    }
- 
-                    $('#chartDiv').show();
+    
+                        $('#chartDiv').show();
 
-                },
-                error: function(data) {
-                    console.log(data);
-                    alert("Error...");
+                    },
+                    error: function(data) {
+                        console.log(data);
+                        alert("Error...");
+                }
+            });
+
             }
-        });
+
 
         });
     });
